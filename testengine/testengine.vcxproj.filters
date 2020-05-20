@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\AppWindows.cpp" />
+    <ClCompile Include="src\Base\SceneManager.cpp" />
+    <ClCompile Include="src\Renderers\RendererVulkanBase.cpp" />
+    <ClCompile Include="src\Renderers\RendererForward.cpp" />
+    <ClCompile Include="src\Logging\LoggerConsole.cpp" />
+    <ClCompile Include="src\Logging\LoggerBase.cpp" />
+    <ClCompile Include="src\Base\ContentManager.cpp" />
+    <ClCompile Include="src\Scenes\TriangleScene.cpp" />
+    <ClCompile Include="src\Base\HudManager.cpp" />
+    <ClCompile Include="src\Vulkan\VulkanWrapper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\AppBase.h" />
+    <ClInclude Include="src\AppWindows.h" />
+    <ClInclude Include="src\Base\SceneManager.h" />
+    <ClInclude Include="src\Renderers\RendererBase.h" />
+    <ClInclude Include="src\Renderers\RendererVulkanBase.h" />
+    <ClInclude Include="src\Renderers\RendererForward.h" />
+    <ClInclude Include="src\Logging\LoggerBase.h" />
+    <ClInclude Include="src\Logging\LoggerConsole.h" />
+    <ClInclude Include="src\Base\ContentManager.h" />
+    <ClInclude Include="src\Scenes\TriangleScene.h" />
+    <ClInclude Include="src\Base\HudManager.h" />
+    <ClInclude Include="src\Vulkan\VulkanWrapper.h" />
+  </ItemGroup>
+</Project>
