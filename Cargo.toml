@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "samples/window-management",
+    "samples/device-management",
+    "samples/inputs",
+    "samples/triangle"
+]
