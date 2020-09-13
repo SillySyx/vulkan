@@ -1,39 +1,43 @@
-// use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
-// use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
-// use vulkano::device::{Device, DeviceExtensions};
-// use vulkano::framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass};
-// use vulkano::image::{ImageUsage, SwapchainImage};
-// use vulkano::instance::{Instance, PhysicalDevice};
-// use vulkano::pipeline::viewport::Viewport;
-// use vulkano::pipeline::GraphicsPipeline;
-// use vulkano::swapchain::{
-//     self,
-//     AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform, Swapchain,
-//     SwapchainCreationError,
-// };
-// use vulkano::sync::{self, FlushError, GpuFuture};
+use std::error::Error;
 
-// use vulkano_win::VkSurfaceBuild;
-// use winit::event::{Event, WindowEvent};
-// use winit::event_loop::{ControlFlow, EventLoop};
-// use winit::window::{Window, WindowBuilder};
+use winit::{
+    window::WindowBuilder,
+    dpi::LogicalSize,
+    event_loop::{EventLoop, ControlFlow},
+    platform::desktop::EventLoopExtDesktop,
+    event::{Event, WindowEvent}, 
+};
 
-// use std::sync::Arc;
-// use std::error::Error;
+use ash::{Entry, vk};
+use vulkan::vulkan::instance::{create_vk_instance};
 
-// pub mod fragment_shader {
-//     vulkano_shaders::shader! {
-//         ty: "fragment",
-//         path: "examples/shaders/triangle-fragment.glsl"
-//     }
-// }
+struct App {
+    _vk_entry: Entry,
+}
 
-// pub mod vertex_shader {
-//     vulkano_shaders::shader! {
-//         ty: "vertex",
-//         path: "examples/shaders/triangle-vertex.glsl"
-//     }
-// }
+impl App {
+    fn new() -> Result<Self, Box<dyn Error>> {
+        let entry = Entry::new()?;
+        let instance = create_vk_instance(&entry, "", "", vec!["VK_LAYER_KHRONOS_validation"])?;
+
+        Ok(Self {
+            _vk_entry: entry,
+        })
+    }
+
+    fn run(self, event_loop: &EventLoop<()>) {
+    }
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let event_loop = EventLoop::new();
+
+    let app = App::new()?;
+
+    app.run(&event_loop);
+
+    Ok(())
+}
 
 // fn main() -> Result<(), Box<dyn Error>> {
 //     let required_extensions = vulkano_win::required_extensions();
@@ -296,5 +300,3 @@
 //         .collect::<Vec<_>>()
 // }
 
-fn main() {
-}
