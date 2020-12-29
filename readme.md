@@ -1,3 +1,6 @@
+# Requirements linux
+* libxcb developer package
+
 # Build
 
 ```
