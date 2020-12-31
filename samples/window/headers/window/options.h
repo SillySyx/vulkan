@@ -5,8 +5,6 @@
 class WindowOptions
 {
 public:
-    uint32_t window_id;
-
     bool shutdown = false;
     uint32_t width = 1920;
     uint32_t height = 1080;

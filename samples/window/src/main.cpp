@@ -2,16 +2,22 @@
 
 int main()
 {
+    XcbWindow window;
+
     WindowOptions options = {
         key_pressed: [&](uint32_t key_code) {
             std::cout << "clicked key " << key_code << std::endl;
 
             if (key_code == 10) {
-                set_window_title(options.window_id, "first");
+                set_window_title(&window, "first");
             }
 
             if (key_code == 11) {
-                set_window_title(options.window_id, "second");
+                set_window_title(&window, "second");
+            }
+
+            if (key_code == 12) {
+                set_window_mode_borderless(&window);
             }
 
             if (key_code == 9) {
@@ -32,13 +38,14 @@ int main()
         },
     };
 
-    if (!create_window(&options))
-    {
-        std::cout << "Failed to create window!" << std::endl;
-    }
+    window = create_window(&options);
 
-    set_window_title(options.window_id, "window test");
+    set_window_title(&window, "window test");
 
-    // start event loop thingy
-    // wait for event loop thread to terminate
+    run_window_eventloop(&window, &options);
+
+    // start update thread!
+    // start render thread!
+
+    close_window(&window);
 }

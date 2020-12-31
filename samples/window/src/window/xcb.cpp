@@ -1,17 +1,19 @@
 #include "window/xcb.h"
 
-bool create_window(WindowOptions* options)
+XcbWindow create_window(WindowOptions* options)
 {
-    auto connection = xcb_connect(NULL, NULL);
-    if (xcb_connection_has_error(connection))
+    XcbWindow window;
+
+    window.connection = xcb_connect(NULL, NULL);
+    if (xcb_connection_has_error(window.connection))
     {
-        return false;
+        throw "asd";
     }
 
-    auto setup = xcb_get_setup(connection);
+    auto setup = xcb_get_setup(window.connection);
     auto screen = xcb_setup_roots_iterator(setup).data;
 
-    options->window_id = xcb_generate_id(connection);
+    window.window_id = xcb_generate_id(window.connection);
     auto value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
 
     uint32_t value_list[] = 
@@ -20,13 +22,20 @@ bool create_window(WindowOptions* options)
         XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_RESIZE_REDIRECT | XCB_EVENT_MASK_FOCUS_CHANGE
     };
 
-    xcb_create_window(connection, screen->root_depth, options->window_id, screen->root, options->top, options->left, options->width, options->height, 1, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
+    xcb_create_window(window.connection, screen->root_depth, window.window_id, screen->root, options->top, options->left, options->width, options->height, 1, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
 
-    xcb_map_window(connection, options->window_id);
-    xcb_flush(connection);
+    xcb_map_window(window.connection, window.window_id);
+    xcb_flush(window.connection);
+
+    return window;
+}
+
+void run_window_eventloop(XcbWindow* window, WindowOptions* options)
+{
+    std::cout << "m2" << std::endl;
 
     xcb_generic_event_t *event;
-    while (!options->shutdown && (event = xcb_wait_for_event(connection)))
+    while (!options->shutdown && (event = xcb_wait_for_event(window->connection)))
     {
         if (event->response_type == XCB_KEY_PRESS) 
         {
@@ -70,49 +79,52 @@ bool create_window(WindowOptions* options)
 
         free(event);
     }
-
-    xcb_disconnect(connection);
-    return true;
 }
 
-void set_window_title(uint32_t window_id, const char *title)
+void set_window_title(XcbWindow* window, const char *title)
 {
-    auto connection = xcb_connect(NULL, NULL);
-    if (xcb_connection_has_error(connection))
-    {
-        return;
-    }
+    std::cout << "m1" << std::endl;
 
-    xcb_change_property(connection, XCB_PROP_MODE_REPLACE, window_id, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
-
-    xcb_disconnect(connection);
+    xcb_change_property(window->connection, XCB_PROP_MODE_REPLACE, window->window_id, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
+    xcb_flush(window->connection);
 }
 
-void set_window_mode_borderless(uint32_t window_id)
+static inline xcb_intern_atom_reply_t* intern_helper(xcb_connection_t *conn, bool only_if_exists, const char *str)
+{
+       xcb_intern_atom_cookie_t cookie = xcb_intern_atom(conn, only_if_exists, strlen(str), str);
+       return xcb_intern_atom_reply(conn, cookie, NULL);
+}
+
+void set_window_mode_borderless(XcbWindow* window)
+{
+    std::cout << "borderless" << std::endl;
+}
+
+void set_window_mode_fullscreen(XcbWindow* window)
+{
+    std::cout << "fullscreen" << std::endl;
+    
+    // xcb_intern_atom_reply_t *atom_wm_state = intern_helper(window->connection, false, "_NET_WM_STATE");
+    // xcb_intern_atom_reply_t *atom_wm_fullscreen = intern_helper(window->connection, false, "_NET_WM_STATE_FULLSCREEN");
+
+    // xcb_change_property(window->connection, XCB_PROP_MODE_REPLACE, window->window_id, atom_wm_state->atom, XCB_ATOM, 32, 1, &(atom_wm_fullscreen->atom));
+    // xcb_flush(window->connection);
+
+    // free(atom_wm_fullscreen);
+    // free(atom_wm_state);    
+}
+
+void set_window_mode_windowed(XcbWindow* window)
 {
 }
 
-void set_window_mode_fullscreen(uint32_t window_id)
+void set_window_size(XcbWindow* window, uint32_t width, uint32_t height)
 {
 }
 
-void set_window_mode_windowed(uint32_t window_id)
+void close_window(XcbWindow* window)
 {
-}
+    xcb_destroy_window(window->connection, window->window_id);
 
-void set_window_size(uint32_t window_id, uint32_t width, uint32_t height)
-{
-}
-
-void close_window(uint32_t window_id)
-{
-    auto connection = xcb_connect(NULL, NULL);
-    if (xcb_connection_has_error(connection))
-    {
-        return;
-    }
-
-    xcb_destroy_window(connection, window_id);
-
-    xcb_disconnect(connection);
+    xcb_disconnect(window->connection);
 }
