@@ -1,8 +1,12 @@
+#include <string.h>
+#include <iostream>
+
+#define USE_XCB_WINDOW 1
 #include "window.h"
 
 int main()
 {
-    XcbWindow window;
+    WindowHandle window;
 
     WindowOptions options = {
         key_pressed: [&](uint32_t key_code) {
@@ -17,7 +21,15 @@ int main()
             }
 
             if (key_code == 12) {
-                set_window_mode_borderless(&window);
+                set_window_mode(&window, WindowModes::Borderless);
+            }
+
+            if (key_code == 13) {
+                set_window_mode(&window, WindowModes::Fullscreen);
+            }
+
+            if (key_code == 14) {
+                set_window_mode(&window, WindowModes::Windowed);
             }
 
             if (key_code == 9) {
@@ -43,9 +55,6 @@ int main()
     set_window_title(&window, "window test");
 
     run_window_eventloop(&window, &options);
-
-    // start update thread!
-    // start render thread!
 
     close_window(&window);
 }

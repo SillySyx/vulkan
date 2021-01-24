@@ -6,27 +6,27 @@
 #include <string.h>
 #include <xcb/xcb.h>
 
+#include "trace.h"
 #include "window/options.h"
 
-class XcbWindow
+struct XcbWindow
 {
-public:
     uint32_t window_id;
     xcb_connection_t *connection;
 };
 
-XcbWindow create_window(WindowOptions* options);
+typedef XcbWindow WindowHandle;
 
-void run_window_eventloop(XcbWindow* window, WindowOptions* options);
+WindowHandle xcb_window_create(WindowOptions *options);
+void xcb_window_run_eventloop(WindowHandle *window, WindowOptions *options);
+void xcb_window_set_title(WindowHandle *window, const char *title);
+void xcb_window_set_mode(WindowHandle *window, WindowModes window_mode);
+void xcb_window_set_size(WindowHandle *window, uint32_t width, uint32_t height);
+void xcb_window_close(WindowHandle *window);
 
-void set_window_title(XcbWindow* window, const char *title);
-
-void set_window_mode_borderless(XcbWindow* window);
-
-void set_window_mode_fullscreen(XcbWindow* window);
-
-void set_window_mode_windowed(XcbWindow* window);
-
-void set_window_size(XcbWindow* window, uint32_t width, uint32_t height);
-
-void close_window(XcbWindow* window);
+#define create_window xcb_window_create
+#define run_window_eventloop xcb_window_run_eventloop
+#define set_window_title xcb_window_set_title
+#define set_window_mode xcb_window_set_mode
+#define set_window_size xcb_window_set_size
+#define close_window xcb_window_close

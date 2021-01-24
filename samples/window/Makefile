@@ -1,7 +1,7 @@
 OUTPUT_PATH = ../../dist
 OUTPUT_FILE = $(OUTPUT_PATH)/window
 HEADERS = -I headers
-LIBS = -lxcb
+LIBS = -lxcb -lX11
 CFLAGS = -std=c++2a -g -Wall
 
 .PHONY: build
