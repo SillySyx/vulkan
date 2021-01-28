@@ -2,8 +2,6 @@
 
 WindowHandle xcb_window_create(WindowOptions *options)
 {
-    TRACE("xcb_window_create");
-
     XcbWindow window;
 
     window.connection = xcb_connect(NULL, NULL);
@@ -16,14 +14,24 @@ WindowHandle xcb_window_create(WindowOptions *options)
     auto screen = xcb_setup_roots_iterator(setup).data;
 
     window.window_id = xcb_generate_id(window.connection);
+    
     auto value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+    uint32_t value_list[] = { screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_RESIZE_REDIRECT | XCB_EVENT_MASK_FOCUS_CHANGE };
 
-    uint32_t value_list[] =
-        {
-            screen->black_pixel,
-            XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_RESIZE_REDIRECT | XCB_EVENT_MASK_FOCUS_CHANGE};
-
-    xcb_create_window(window.connection, screen->root_depth, window.window_id, screen->root, options->top, options->left, options->width, options->height, 1, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
+    xcb_create_window(
+        window.connection, 
+        screen->root_depth, 
+        window.window_id, 
+        screen->root, 
+        options->top, 
+        options->left, 
+        options->width, 
+        options->height, 
+        1, 
+        XCB_WINDOW_CLASS_INPUT_OUTPUT, 
+        screen->root_visual, 
+        value_mask, 
+        value_list);
 
     xcb_map_window(window.connection, window.window_id);
     xcb_flush(window.connection);
@@ -33,8 +41,6 @@ WindowHandle xcb_window_create(WindowOptions *options)
 
 void xcb_window_run_eventloop(WindowHandle *window, WindowOptions *options)
 {
-    TRACE("xcb_window_run_eventloop");
-
     while (!options->shutdown)
     {
         xcb_generic_event_t *event;
@@ -60,8 +66,14 @@ void xcb_window_run_eventloop(WindowHandle *window, WindowOptions *options)
 
             if (event->response_type == XCB_RESIZE_REQUEST)
             {
-                auto width = ((xcb_resize_request_event_t *)event)->width;
-                auto height = ((xcb_resize_request_event_t *)event)->height;
+                auto width = (uint32_t)((xcb_resize_request_event_t *)event)->width;
+                auto height = (uint32_t)((xcb_resize_request_event_t *)event)->height;
+
+                if (width == options->width && height == options->height)
+                    continue;
+
+                options->width = width;
+                options->height = height;
 
                 if (options->resized)
                     options->resized(width, height);

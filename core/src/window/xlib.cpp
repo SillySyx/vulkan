@@ -6,14 +6,10 @@ WindowHandle xlib_window_create(WindowOptions *options)
     auto screen = DefaultScreen(display);
     auto root = RootWindow(display, screen);
     auto depth = DefaultDepth(display, DefaultScreen(display));
-    auto visual = DefaultVisualOfScreen(DefaultScreenOfDisplay(display)); //DefaultVisual(display, DefaultScreen(display))
-    auto position_x = 0;
-    auto position_y = 0;
-    auto width = 200;
-    auto height = 200;
+    auto visual = DefaultVisual(display, DefaultScreen(display));
     auto border_width = 0;
     auto _class = InputOutput;
-    auto attributes_mask = CWBackPixel; // | CWColormap  | CWBorderPixel;
+    auto attributes_mask = CWBackPixel;
 
     XSetWindowAttributes attributes;
     attributes.background_pixmap = ParentRelative;
@@ -21,10 +17,10 @@ WindowHandle xlib_window_create(WindowOptions *options)
     auto window = XCreateWindow(
         display,
         root,
-        position_x,
-        position_y,
-        width,
-        height,
+        options->left,
+        options->top,
+        options->width,
+        options->height,
         border_width,
         depth,
         _class,
@@ -32,7 +28,7 @@ WindowHandle xlib_window_create(WindowOptions *options)
         attributes_mask,
         &attributes);
 
-    XSelectInput(display, window, KeyPressMask | KeyReleaseMask);
+    XSelectInput(display, window, KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | FocusChangeMask);
     XMapWindow(display, window);
 
     XFlush(display);
@@ -52,13 +48,9 @@ void xlib_window_run_eventloop(WindowHandle *window, WindowOptions *options)
             XEvent xevent;
             XNextEvent(window->display, &xevent);
 
-            if (xevent.type == DestroyNotify)
+            if (xevent.type == DestroyNotify || xevent.type == UnmapNotify)
             {
-                break;
-            }
-
-            if (xevent.type == UnmapNotify)
-            {
+                options->shutdown = true;
                 break;
             }
 
@@ -78,6 +70,33 @@ void xlib_window_run_eventloop(WindowHandle *window, WindowOptions *options)
 
                 if (options->button_pressed != NULL)
                     options->button_pressed(button_code, x, y);
+            }
+
+            if (xevent.type == ConfigureNotify)
+            {
+                auto width = (uint32_t)xevent.xconfigure.width;
+                auto height = (uint32_t)xevent.xconfigure.height;
+
+                if (width == options->width && height == options->height)
+                    continue;
+
+                options->width = width;
+                options->height = height;
+
+                if (options->resized)
+                    options->resized(width, height);
+            }
+
+            if (xevent.type == FocusIn) 
+            {
+                if (options->focused)
+                    options->focused();
+            }
+
+            if (xevent.type == FocusOut) 
+            {
+                if (options->lost_focus)
+                    options->lost_focus();
             }
         }
     }
@@ -201,5 +220,5 @@ void xlib_window_set_size(WindowHandle *window, uint32_t width, uint32_t height)
 
 void xlib_window_close(WindowHandle *window)
 {
-    TRACE("xlib_window_close");
+    XDestroyWindow(window->display, window->window_id);
 }
