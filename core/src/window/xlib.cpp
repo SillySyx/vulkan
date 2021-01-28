@@ -2,44 +2,39 @@
 
 WindowHandle xlib_window_create(WindowOptions *options)
 {
-    TRACE("XOpenDisplay");
     auto display = XOpenDisplay(NULL);
+    auto screen = DefaultScreen(display);
+    auto root = RootWindow(display, screen);
+    auto depth = DefaultDepth(display, DefaultScreen(display));
+    auto visual = DefaultVisualOfScreen(DefaultScreenOfDisplay(display)); //DefaultVisual(display, DefaultScreen(display))
+    auto position_x = 0;
+    auto position_y = 0;
+    auto width = 200;
+    auto height = 200;
+    auto border_width = 0;
+    auto _class = InputOutput;
+    auto attributes_mask = CWBackPixel; // | CWColormap  | CWBorderPixel;
 
-    TRACE("DefaultRootWindow");
-    auto root_screen = DefaultRootWindow(display);
+    XSetWindowAttributes attributes;
+    attributes.background_pixmap = ParentRelative;
 
-    XSetWindowAttributes attrs;
-    attrs.override_redirect = true;
-
-    XVisualInfo vinfo;
-    if (!XMatchVisualInfo(display, DefaultScreen(display), 32, TrueColor, &vinfo))
-    {
-        TRACE("No visual found supporting 32 bit color, terminating");
-        exit(EXIT_FAILURE);
-    }
-
-    TRACE("XCreateWindow");
     auto window = XCreateWindow(
         display,
-        root_screen,
-        0,
-        0,
-        200,
-        200,
-        0,
-        vinfo.depth,
-        InputOutput,
-        vinfo.visual,
-        CWOverrideRedirect | CWColormap | CWBackPixel | CWBorderPixel,
-        &attrs);
+        root,
+        position_x,
+        position_y,
+        width,
+        height,
+        border_width,
+        depth,
+        _class,
+        visual,
+        attributes_mask,
+        &attributes);
 
-    TRACE("XSelectInput");
     XSelectInput(display, window, KeyPressMask | KeyReleaseMask);
-
-    TRACE("XMapWindow");
     XMapWindow(display, window);
 
-    TRACE("XFlush");
     XFlush(display);
 
     return WindowHandle{
@@ -50,43 +45,42 @@ WindowHandle xlib_window_create(WindowOptions *options)
 
 void xlib_window_run_eventloop(WindowHandle *window, WindowOptions *options)
 {
-    TRACE("xlib_window_run_eventloop");
-
-    while (!options->shutdown && (XPending(window->display)))
+    while (!options->shutdown)
     {
-        TRACE("XPending");
-
-        XEvent xevent;
-        TRACE("XNextEvent");
-        XNextEvent(window->display, &xevent);
-
-        if (xevent.type == DestroyNotify)
+        while (XPending(window->display) > 0)
         {
-            break;
+            XEvent xevent;
+            XNextEvent(window->display, &xevent);
+
+            if (xevent.type == DestroyNotify)
+            {
+                break;
+            }
+
+            if (xevent.type == UnmapNotify)
+            {
+                break;
+            }
+
+            if (xevent.type == KeyPress)
+            {
+                auto key_code = xevent.xkey.keycode;
+
+                if (options->key_pressed != NULL)
+                    options->key_pressed(key_code);
+            }
+
+            if (xevent.type == ButtonPress)
+            {
+                auto button_code = xevent.xbutton.button;
+                auto x = xevent.xbutton.x;
+                auto y = xevent.xbutton.y;
+
+                if (options->button_pressed != NULL)
+                    options->button_pressed(button_code, x, y);
+            }
         }
-
-        if (xevent.type == UnmapNotify)
-        {
-            break;
-        }
-
-        if (xevent.type == KeyPress)
-        {
-            auto key_code = xevent.xkey.keycode;
-
-            if (options->key_pressed != NULL)
-                options->key_pressed(key_code);
-        }
-
-        if (xevent.type == ButtonPress)
-        {
-            auto button_code = xevent.xbutton.button;
-            auto x = xevent.xbutton.x;
-            auto y = xevent.xbutton.y;
-
-            if (options->button_pressed != NULL)
-                options->button_pressed(button_code, x, y);
-        }
+    }
 
         // Window xWindow = xEvent.xany.window;
 
@@ -179,12 +173,20 @@ void xlib_window_run_eventloop(WindowHandle *window, WindowOptions *options)
         //     }
         //     break;
         // }
-    }
 }
 
 void xlib_window_set_title(WindowHandle *window, const char *title)
 {
-    TRACE("xlib_window_set_title");
+    XChangeProperty(
+        window->display, 
+        window->window_id,
+        XA_WM_NAME,
+        XA_STRING, 
+        8, 
+        PropModeReplace, 
+        (unsigned char *)title,
+	    strlen(title)
+    );
 }
 
 void xlib_window_set_mode(WindowHandle *window, WindowModes window_mode)

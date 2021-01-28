@@ -1,7 +1,7 @@
 #include <string.h>
 #include <iostream>
 
-#define USE_XCB_WINDOW 1
+#include "platform.h"
 #include "window.h"
 
 int main()

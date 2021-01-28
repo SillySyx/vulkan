@@ -35,49 +35,52 @@ void xcb_window_run_eventloop(WindowHandle *window, WindowOptions *options)
 {
     TRACE("xcb_window_run_eventloop");
 
-    xcb_generic_event_t *event;
-    while (!options->shutdown && (event = xcb_wait_for_event(window->connection)))
+    while (!options->shutdown)
     {
-        if (event->response_type == XCB_KEY_PRESS)
+        xcb_generic_event_t *event;
+        while ((event = xcb_wait_for_event(window->connection)))
         {
-            auto key_code = ((xcb_key_press_event_t *)event)->detail;
+            if (event->response_type == XCB_KEY_PRESS)
+            {
+                auto key_code = ((xcb_key_press_event_t *)event)->detail;
 
-            if (options->key_pressed != NULL)
-                options->key_pressed(key_code);
+                if (options->key_pressed != NULL)
+                    options->key_pressed(key_code);
+            }
+
+            if (event->response_type == XCB_BUTTON_PRESS)
+            {
+                auto button_code = ((xcb_button_press_event_t *)event)->detail;
+                auto x = ((xcb_button_press_event_t *)event)->event_x;
+                auto y = ((xcb_button_press_event_t *)event)->event_y;
+
+                if (options->button_pressed != NULL)
+                    options->button_pressed(button_code, x, y);
+            }
+
+            if (event->response_type == XCB_RESIZE_REQUEST)
+            {
+                auto width = ((xcb_resize_request_event_t *)event)->width;
+                auto height = ((xcb_resize_request_event_t *)event)->height;
+
+                if (options->resized)
+                    options->resized(width, height);
+            }
+
+            if (event->response_type == XCB_FOCUS_IN)
+            {
+                if (options->focused)
+                    options->focused();
+            }
+
+            if (event->response_type == XCB_FOCUS_OUT)
+            {
+                if (options->lost_focus)
+                    options->lost_focus();
+            }
+
+            free(event);
         }
-
-        if (event->response_type == XCB_BUTTON_PRESS)
-        {
-            auto button_code = ((xcb_button_press_event_t *)event)->detail;
-            auto x = ((xcb_button_press_event_t *)event)->event_x;
-            auto y = ((xcb_button_press_event_t *)event)->event_y;
-
-            if (options->button_pressed != NULL)
-                options->button_pressed(button_code, x, y);
-        }
-
-        if (event->response_type == XCB_RESIZE_REQUEST)
-        {
-            auto width = ((xcb_resize_request_event_t *)event)->width;
-            auto height = ((xcb_resize_request_event_t *)event)->height;
-
-            if (options->resized)
-                options->resized(width, height);
-        }
-
-        if (event->response_type == XCB_FOCUS_IN)
-        {
-            if (options->focused)
-                options->focused();
-        }
-
-        if (event->response_type == XCB_FOCUS_OUT)
-        {
-            if (options->lost_focus)
-                options->lost_focus();
-        }
-
-        free(event);
     }
 }
 

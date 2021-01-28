@@ -1,6 +1,6 @@
 OUTPUT_PATH = ../../dist
 OUTPUT_FILE = $(OUTPUT_PATH)/window
-HEADERS = -I headers
+HEADERS = -I headers -I../../core/headers
 LIBS = -lxcb -lX11
 CFLAGS = -std=c++2a -g -Wall
 
@@ -8,7 +8,7 @@ CFLAGS = -std=c++2a -g -Wall
 
 build:
 	-@mkdir $(OUTPUT_PATH)
-	g++ $(CFLAGS) $(HEADERS) $(LIBS) -o $(OUTPUT_FILE) src/**/*.cpp src/main.cpp
+	g++ $(CFLAGS) $(HEADERS) $(LIBS) -o $(OUTPUT_FILE) ../../core/src/**/*.cpp src/main.cpp
 
 run: build
 	$(OUTPUT_FILE)
