@@ -5,10 +5,6 @@ WindowHandle xcb_window_create(WindowOptions *options)
     XcbWindow window;
 
     window.connection = xcb_connect(NULL, NULL);
-    if (xcb_connection_has_error(window.connection))
-    {
-        throw "asd";
-    }
 
     auto setup = xcb_get_setup(window.connection);
     auto screen = xcb_setup_roots_iterator(setup).data;
@@ -114,21 +110,23 @@ void xcb_window_set_fullscreen(WindowHandle *window)
 {
     TRACE("xcb_window_set_fullscreen");
 
-    xcb_intern_atom_reply_t *atom_wm_state = intern_helper(window->connection, false, "_NET_WM_STATE");
-    xcb_intern_atom_reply_t *atom_wm_fullscreen = intern_helper(window->connection, false, "_NET_WM_STATE_FULLSCREEN");
+    auto atom_wm_state = intern_helper(window->connection, false, "_NET_WM_STATE");
+    auto atom_wm_fullscreen = intern_helper(window->connection, false, "_NET_WM_STATE_FULLSCREEN");
 
-    xcb_change_property(window->connection, XCB_PROP_MODE_REPLACE, window->window_id, atom_wm_state->atom, XCB_ATOM, 32, 1, &(atom_wm_fullscreen->atom));
+    xcb_change_property(
+        window->connection, 
+        XCB_PROP_MODE_REPLACE, 
+        window->window_id, 
+        atom_wm_state->atom, 
+        XCB_ATOM_ATOM, 
+        32, 
+        1, 
+        &(atom_wm_fullscreen->atom));
 
-    xcb_map_window(window->connection, window->window_id);
     xcb_flush(window->connection);
 
     free(atom_wm_fullscreen);
     free(atom_wm_state);
-}
-
-void xcb_window_set_borderless(WindowHandle *window)
-{
-    TRACE("xcb_window_set_borderless");
 }
 
 void xcb_window_set_windowed(WindowHandle *window)
@@ -141,11 +139,6 @@ void xcb_window_set_mode(WindowHandle *window, WindowModes window_mode)
     if (window_mode == WindowModes::Fullscreen)
     {
         xcb_window_set_fullscreen(window);
-    }
-
-    if (window_mode == WindowModes::Borderless)
-    {
-        xcb_window_set_borderless(window);
     }
 
     if (window_mode == WindowModes::Windowed)
@@ -164,6 +157,4 @@ void xcb_window_close(WindowHandle *window)
     TRACE("xcb_window_close");
 
     xcb_destroy_window(window->connection, window->window_id);
-
-    xcb_disconnect(window->connection);
 }

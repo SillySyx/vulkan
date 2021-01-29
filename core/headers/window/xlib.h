@@ -16,6 +16,14 @@ struct XlibWindow
     Display *display;
 };
 
+struct MotifWmHints {
+    unsigned long flags;
+    unsigned long functions;
+    unsigned long decorations;
+    long input_mode;
+    unsigned long status;
+};
+
 typedef XlibWindow WindowHandle;
 
 WindowHandle xlib_window_create(WindowOptions *options);

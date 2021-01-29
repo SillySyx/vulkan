@@ -100,98 +100,6 @@ void xlib_window_run_eventloop(WindowHandle *window, WindowOptions *options)
             }
         }
     }
-
-        // Window xWindow = xEvent.xany.window;
-
-        // Event event;
-        // event.base.timeMS = GetRunTimeMS();
-        // event.base.canvas = 0;
-        // if (m_canvasMap.count(xWindow))
-        //     event.base.canvas = m_canvasMap[xWindow];
-
-        // switch (xEvent.type)
-        // {
-        // case ClientMessage:
-        //     if (xEvent.xclient.data.l[0] == m_wmDeleteMessage)
-        //         return Stop();
-        //     break;
-        // case DestroyNotify:
-        // case UnmapNotify:
-        //     return Stop(true);
-        // case KeyPress:
-        //     event.type = event::KeyDown;
-        //     event.key.scanCode = NativeScanCodeToScanCode(xEvent.xkey.keycode);
-        //     event.key.keyCode = ScanCodeToKeyCode(event.key.scanCode);
-        //     event.key.state = xEvent.xkey.state;
-        //     OnEvent(event);
-        //     break;
-        // case KeyRelease:
-        //     event.type = event::KeyUp;
-        //     event.key.scanCode = NativeScanCodeToScanCode(xEvent.xkey.keycode);
-        //     event.key.keyCode = ScanCodeToKeyCode(event.key.scanCode);
-        //     event.key.state = xEvent.xkey.state;
-        //     OnEvent(event);
-        //     break;
-        //     ;
-        // case ButtonPress:
-        //     event.mouseButton.type = event::MouseButtonDown;
-        //     switch (xEvent.xbutton.button)
-        //     {
-        //     case 1:
-        //         event.mouseButton.button = event::MouseButtonLeft;
-        //         break;
-        //     case 2:
-        //         event.mouseButton.button = event::MouseButtonMiddle;
-        //         break;
-        //     case 3:
-        //         event.mouseButton.button = event::MouseButtonRight;
-        //         break;
-        //     default:
-        //         event.mouseButton.button = event::Unknown;
-        //     }
-        //     event.mouseButton.state = xEvent.xbutton.state;
-        //     event.mouseButton.x = xEvent.xbutton.x;
-        //     event.mouseButton.y = xEvent.xbutton.y;
-        //     OnEvent(event);
-        //     break;
-        // case ButtonRelease:
-        //     event.mouseButton.type = event::MouseButtonUp;
-        //     switch (xEvent.xbutton.button)
-        //     {
-        //     case 1:
-        //         event.mouseButton.button = event::MouseButtonLeft;
-        //         break;
-        //     case 2:
-        //         event.mouseButton.button = event::MouseButtonMiddle;
-        //         break;
-        //     case 3:
-        //         event.mouseButton.button = event::MouseButtonRight;
-        //         break;
-        //     default:
-        //         event.mouseButton.button = event::Unknown;
-        //     }
-        //     event.mouseButton.state = xEvent.xbutton.state;
-        //     event.mouseButton.x = xEvent.xbutton.x;
-        //     event.mouseButton.y = xEvent.xbutton.y;
-        //     OnEvent(event);
-        //     break;
-        // case MotionNotify:
-        //     event.type = event::MouseMotion;
-        //     event.mouseMotion.x = xEvent.xmotion.x;
-        //     event.mouseMotion.y = xEvent.xmotion.y;
-        //     OnEvent(event);
-        //     break;
-        // case ConfigureNotify:
-        //     if (xEvent.xconfigure.width != event.base.canvas->GetWidth() || xEvent.xconfigure.height != event.base.canvas->GetHeight())
-        //     {
-        //         event.base.canvas->UpdateViewport(xEvent.xconfigure.width, xEvent.xconfigure.height);
-        //         event.type = event::WindowResize;
-        //         event.windowResize.width = xEvent.xconfigure.width;
-        //         event.windowResize.height = xEvent.xconfigure.height;
-        //         OnEvent(event);
-        //     }
-        //     break;
-        // }
 }
 
 void xlib_window_set_title(WindowHandle *window, const char *title)
@@ -208,14 +116,76 @@ void xlib_window_set_title(WindowHandle *window, const char *title)
     );
 }
 
+void xlib_window_set_fullscreen(WindowHandle *window)
+{
+    TRACE("xlib_window_set_fullscreen");
+
+    XEvent xevent;
+    xevent.xclient.type = ClientMessage;
+    xevent.xclient.serial = 0;
+    xevent.xclient.send_event = True;
+    xevent.xclient.message_type = XInternAtom(window->display, "_NET_WM_STATE", False);
+    xevent.xclient.window = window->window_id;
+    xevent.xclient.format = 32;
+    xevent.xclient.data.l[0] = 1;
+    xevent.xclient.data.l[1] = XInternAtom(window->display, "_NET_WM_STATE_FULLSCREEN", False);
+
+    XSendEvent(
+        window->display, 
+        DefaultRootWindow(window->display), 
+        False, 
+        SubstructureNotifyMask | SubstructureRedirectMask, 
+        &xevent
+    );
+}
+
+void xlib_window_set_windowed(WindowHandle *window)
+{
+    TRACE("xlib_window_set_windowed");
+
+    XEvent xevent;
+    xevent.xclient.type = ClientMessage;
+    xevent.xclient.serial = 0;
+    xevent.xclient.send_event = True;
+    xevent.xclient.message_type = XInternAtom(window->display, "_NET_WM_STATE", False);
+    xevent.xclient.window = window->window_id;
+    xevent.xclient.format = 32;
+    xevent.xclient.data.l[0] = 0;
+    xevent.xclient.data.l[1] = XInternAtom(window->display, "_NET_WM_STATE_FULLSCREEN", False);
+
+    XSendEvent(
+        window->display, 
+        DefaultRootWindow(window->display), 
+        False, 
+        SubstructureNotifyMask | SubstructureRedirectMask, 
+        &xevent
+    );
+}
+
 void xlib_window_set_mode(WindowHandle *window, WindowModes window_mode)
 {
-    TRACE("xlib_window_set_mode");
+    if (window_mode == WindowModes::Fullscreen)
+    {
+        xlib_window_set_fullscreen(window);
+    }
+
+    if (window_mode == WindowModes::Windowed)
+    {
+        xlib_window_set_windowed(window);
+    }
 }
 
 void xlib_window_set_size(WindowHandle *window, uint32_t width, uint32_t height)
 {
     TRACE("xlib_window_set_size");
+
+    auto flags = CWWidth | CWHeight;
+
+    XWindowChanges changes;
+    changes.width = width;
+    changes.height = height;
+
+    XConfigureWindow(window->display, window->window_id, flags, &changes);
 }
 
 void xlib_window_close(WindowHandle *window)
