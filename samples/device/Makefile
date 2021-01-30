@@ -1,6 +1,6 @@
 OUTPUT_PATH = ../../dist
 OUTPUT_FILE = $(OUTPUT_PATH)/device
-HEADERS = -I headers -I../../core/headers -I../../libs/Vulkan-Headers/include
+HEADERS = -I headers -I ../../core/headers -I ../../libs/Vulkan-Headers/include
 LIBS = -lxcb -lX11 -lvulkan
 CFLAGS = -std=c++2a -g -Wall
 

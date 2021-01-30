@@ -26,7 +26,19 @@ std::vector<const char*> load_extensions(bool enableValidation)
 	return extensions;
 }
 
-bool create_device(CreateDeviceInfo* create_device_info, Device* device)
+std::vector<const char*> load_layers(bool enableValidation)
+{
+	std::vector<const char*> layers;
+
+	if (enableValidation)
+	{
+		layers.push_back("VK_LAYER_LUNARG_standard_validation");
+	}
+
+	return layers;
+}
+
+bool create_instance(CreateDeviceInfo* create_device_info, Device* device)
 {
     VkApplicationInfo appInfo;
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -43,25 +55,92 @@ bool create_device(CreateDeviceInfo* create_device_info, Device* device)
 	instanceCreateInfo.enabledExtensionCount = (uint32_t)extensions.size();
 	instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
 
-	if (create_device_info->enableValidation)
+	auto layers = load_layers(create_device_info->enableValidation);
+	instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
+	instanceCreateInfo.ppEnabledLayerNames = layers.data();
+
+	if (vkCreateInstance(&instanceCreateInfo, nullptr, &device->instance) != VK_SUCCESS)
+		return false;
+}
+
+bool create_debug_report_callback(CreateDeviceInfo* create_device_info, Device* device)
+{
+	if (!create_device_info->enableValidation)
+		return true;
+
+	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo;
+	dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+	dbgCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT; // VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT
+	dbgCreateInfo.pfnCallback = [](VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location, int32_t msgCode, const char * pLayerPrefix, const char * pMsg, void * pUserData) -> VkBool32
 	{
-		const char *validationLayerNames[] =
-		{
-			// This is a meta layer that enables all of the standard
-			// validation layers in the correct order :
-			// threading, parameter_validation, device_limits, object_tracker, image, core_validation, swapchain, and unique_objects
-			"VK_LAYER_LUNARG_standard_validation"
-		};
+		// Select prefix depending on flags passed to the callback
+		// Note that multiple flags may be set for a single validation message
+		std::string message("");
 
-		instanceCreateInfo.enabledLayerCount = 1;
-		instanceCreateInfo.ppEnabledLayerNames = validationLayerNames;
-	}
+		// Error that may result in undefined behaviour
+		if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+			message += "ERROR:";
 
-	VkInstance instance;
-	if (vkCreateInstance(&instanceCreateInfo, nullptr, &instance) != VK_SUCCESS)
+		// Warnings may hint at unexpected / non-spec API usage
+		if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+			message += "WARNING:";
+
+		// May indicate sub-optimal usage of the API
+		if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+			message += "PERFORMANCE:";
+
+		// Informal messages that may become handy during debugging
+		if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+			message += "INFO:";
+
+		// Diagnostic info from the Vulkan loader and layers
+		// Usually not helpful in terms of API usage, but may help to debug layer and loader problems 
+		if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+			message += "DEBUG:";
+
+		// Display message to default output (console if activated)
+		message += " [" + std::string(pLayerPrefix) + "] Code " + std::to_string(msgCode) + "\n" + pMsg;
+
+		std::cout << message << std::endl;
+
+		fflush(stdout);
+
+		// The return value of this callback controls wether the Vulkan call that caused
+		// the validation message will be aborted or not
+		// We return VK_FALSE as we DON'T want Vulkan calls that cause a validation message 
+		// (and return a VkResult) to abort
+		// If you instead want to have calls abort, pass in VK_TRUE and the function will 
+		// return VK_ERROR_VALIDATION_FAILED_EXT 
+		return VK_FALSE;
+	};
+
+	if (vkCreateDebugReportCallbackEXT(device->instance, &dbgCreateInfo, nullptr, &device->debugReportCallback) != VK_SUCCESS)
 		return false;
 
-	device->instance = instance;
+	return true;
+}
+
+bool create_device(CreateDeviceInfo* create_device_info, Device* device)
+{
+	if (!create_instance(create_device_info, device))
+		return false;
+
+	if (!create_debug_report_callback(create_device_info, device))
+		return false;
+
+	// PhysicalDevice
+	// LogicalDevice
 
     return true;
+}
+
+void destroy_device(Device* device)
+{
+	if (device->debugReportCallback)
+	{
+		vkDestroyDebugReportCallbackEXT(device->instance, device->debugReportCallback, nullptr);
+		device->debugReportCallback = nullptr;
+	}
+
+	vkDestroyInstance(device->instance, nullptr);
 }
